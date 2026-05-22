@@ -16,7 +16,7 @@ Components ship pre-registered; no `vendor:publish` needed unless you want to fo
 |---|---|
 | `<x-input::mask-alpine />` | Format-as-you-type for any `#`-pattern (credit cards, dates, IDs) |
 | `<x-input::password-alpine />` | Show/hide toggle + zero-dependency strength meter |
-| `<x-input::otp-alpine />` | N-box one-time code with arrow-key nav, paste-spread, SMS autofill |
+| `<x-input::otp-alpine />` | N-box one-time code · arrow / home / end nav, paste-spread, SMS autofill, visual groups, mask mode, auto-submit on complete |
 | `<x-input::textarea-alpine />` | Auto-resizing textarea with optional character counter |
 
 Phone, currency, tags, and autocomplete variants are planned · the four above are the foundation. PRs welcome.
@@ -36,8 +36,16 @@ Phone, currency, tags, and autocomplete variants are planned · the four above a
 {{-- New-password field with strength meter --}}
 <x-input::password-alpine name="password" :strength="true" required />
 
-{{-- 6-digit MFA code · paste-aware, auto-advance --}}
+{{-- 6-digit MFA code · paste-aware, auto-advance, auto-submit --}}
 <x-input::otp-alpine name="code" length="6" required />
+
+{{-- 8-character backup code with letters, visually grouped --}}
+<x-input::otp-alpine name="backup" length="8" pattern="[A-Z0-9]"
+                     :groups="[4, 4]" />
+
+{{-- 4-digit PIN with shoulder-surf protection, error state --}}
+<x-input::otp-alpine name="pin" length="4" mask
+                     :error="$errors->has('pin')" />
 
 {{-- Auto-resizing comment box with a character limit --}}
 <x-input::textarea-alpine name="notes" maxlength="500" placeholder="Add notes…" />

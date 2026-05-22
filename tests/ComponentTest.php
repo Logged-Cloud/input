@@ -74,36 +74,103 @@ test('otp-alpine component file exists', function () use ($otp) {
 test('otp-alpine renders N boxes from the length prop', function () use ($otp) {
     $template = file_get_contents($otp);
     expect($template)
-        ->toContain('Array.from({ length }, () => \'\')')
-        ->and($template)->toContain('x-for="(digit, i) in digits"');
+        ->toContain("Array.from({ length }, () => '')")
+        ->and($template)->toContain('x-for="(slot, i) in slots"');
 });
 
-test('otp-alpine wires the autofill autocomplete', function () use ($otp) {
+test('otp-alpine wires the SMS-autofill autocomplete', function () use ($otp) {
     $template = file_get_contents($otp);
     expect($template)
-        ->toContain("autocomplete=\"{{ \$autocomplete }}\"")
+        ->toContain('autocomplete="{{ $autocomplete }}"')
         ->and($template)->toContain("'autocomplete' => 'one-time-code'");
 });
 
-test('otp-alpine arrow keys + backspace move focus between boxes', function () use ($otp) {
+test('otp-alpine covers the full keyboard navigation surface', function () use ($otp) {
     $template = file_get_contents($otp);
     foreach ([
-        '@keydown.arrow-left',
-        '@keydown.arrow-right',
+        '@keydown.arrow-left.prevent',
+        '@keydown.arrow-right.prevent',
+        '@keydown.home.prevent',
+        '@keydown.end.prevent',
         '@keydown.backspace',
         'onBackspace',
-        'focusBox(i - 1)',
-        'focusBox(i + 1)',
+        'focusBox(slot.index - 1)',
+        'focusBox(slot.index + 1)',
+        'focusBox(0)',
+        'focusBox(length - 1)',
     ] as $needle) {
         expect($template)->toContain($needle);
     }
 });
 
-test('otp-alpine handles SMS-autofill paste across boxes', function () use ($otp) {
+test('otp-alpine handles SMS-autofill paste and strips non-pattern chars', function () use ($otp) {
     $template = file_get_contents($otp);
     expect($template)
         ->toContain('@paste')
-        ->and($template)->toContain('onPaste');
+        ->and($template)->toContain('onPaste')
+        // pasted text with spaces / dashes from email is normalised
+        ->and($template)->toContain("text.split('').filter((c) => allow.test(c)).slice(0, length)");
+});
+
+test('otp-alpine supports visual groups via the groups prop', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain("groups.reduce((s, n) => s + n, 0) === length")
+        ->and($template)->toContain("slots.push({ kind: 'sep' })")
+        ->and($template)->toContain('class="lc-otp-sep"');
+});
+
+test('otp-alpine supports mask mode for shoulder-surf-safe codes', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain("'mask' => false")
+        ->and($template)->toContain(":type=\"mask ? 'password' : 'text'\"");
+});
+
+test('otp-alpine auto-submits the closest form when complete', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain('isComplete')
+        ->and($template)->toContain("this.\$root.closest('form')")
+        ->and($template)->toContain('requestSubmit')
+        ->and($template)->toContain("'lc-input:otp:complete'");
+});
+
+test('otp-alpine respects the disabled prop end-to-end', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain("'disabled' => false")
+        ->and($template)->toContain(':disabled="disabled"')
+        ->and($template)->toContain('if (this.disabled) return');
+});
+
+test('otp-alpine surfaces an error state via aria-invalid + data-error', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain("'error' => false")
+        ->and($template)->toContain("'data-error' => \$error ? 'true' : 'false'")
+        ->and($template)->toContain(":aria-invalid=\"@js(\$error) ? 'true' : 'false'\"");
+});
+
+test('otp-alpine selects existing content on focus so retyping replaces', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain('@focus="onFocus(slot.index, $event)"')
+        ->and($template)->toContain('e.target.select()');
+});
+
+test('otp-alpine picks numeric inputmode for digits-only patterns', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain("preg_match('/^\\\\\\\\d|0-9|\\[0-9\\]\$/', \$pattern)")
+        ->and($template)->toContain('inputmode="{{ $inputmode }}"');
+});
+
+test('otp-alpine ships its own CSS for the box look', function () use ($otp) {
+    $template = file_get_contents($otp);
+    expect($template)
+        ->toContain('.lc-input--otp .lc-otp-box')
+        ->and($template)->toContain('@media (max-width: 480px)');
 });
 
 // ─── textarea-alpine ────────────────────────────────────────────────
