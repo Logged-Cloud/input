@@ -11,6 +11,7 @@ $mask     = __DIR__.'/../resources/views/components/mask-alpine.blade.php';
 $password = __DIR__.'/../resources/views/components/password-alpine.blade.php';
 $otp      = __DIR__.'/../resources/views/components/otp-alpine.blade.php';
 $textarea = __DIR__.'/../resources/views/components/textarea-alpine.blade.php';
+$camera   = __DIR__.'/../resources/views/components/camera-alpine.blade.php';
 $provider = __DIR__.'/../src/InputServiceProvider.php';
 
 // ─── mask-alpine ────────────────────────────────────────────────────
@@ -191,6 +192,84 @@ test('textarea-alpine shows a counter when maxlength is set', function () use ($
     expect($template)
         ->toContain('@if ($counter && $maxlength)')
         ->and($template)->toContain('value.length');
+});
+
+// ─── camera-alpine ──────────────────────────────────────────────────
+
+test('camera-alpine component file exists', function () use ($camera) {
+    expect(file_exists($camera))->toBeTrue();
+});
+
+test('camera-alpine uses getUserMedia · not the OS camera app', function () use ($camera) {
+    $template = file_get_contents($camera);
+    // No `capture` attribute on the file input · that would punt to the
+    // OS camera. We use an explicit getUserMedia call instead.
+    expect($template)
+        ->not->toContain('capture="')
+        ->and($template)->toContain('navigator.mediaDevices.getUserMedia')
+        ->and($template)->toContain('facingMode');
+});
+
+test('camera-alpine compresses captured frames via canvas + toBlob', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain("canvas.getContext('2d')")
+        ->and($template)->toContain('canvas.toBlob(resolve, mime, quality)')
+        // longest-edge scaling clamps phone-camera megapixel output
+        ->and($template)->toContain('maxEdge / Math.max(vw, vh)');
+});
+
+test('camera-alpine injects the captured blob into a real file input', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain('new DataTransfer()')
+        ->and($template)->toContain('dt.items.add(file)')
+        ->and($template)->toContain('this.$refs.fileField.files = dt.files')
+        // change event so wire:model / onchange listeners pick it up
+        ->and($template)->toContain("new Event('change', { bubbles: true })");
+});
+
+test('camera-alpine offers a gallery fallback', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain('onGalleryChoose')
+        ->and($template)->toContain("'allowGallery' => null")
+        // the gallery path also runs through the canvas pipeline so
+        // user-picked images get the same compression treatment.
+        ->and($template)->toContain('img.onload = async');
+});
+
+test('camera-alpine handles permission denied gracefully', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain("e.name === 'NotAllowedError'")
+        ->and($template)->toContain('Camera permission denied');
+});
+
+test('camera-alpine stops the media stream after capture', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain('stopStream()')
+        ->and($template)->toContain('this.stream.getTracks()');
+});
+
+test('camera-alpine sets playsinline so iOS does not go fullscreen', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)->toContain('playsinline');
+});
+
+test('camera-alpine ships its own CSS for the capture UI', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain('.lc-input--camera .lc-camera-shutter')
+        ->and($template)->toContain('aspect-ratio: 1 / 1');
+});
+
+test('camera-alpine cleans up object URLs to avoid leaks', function () use ($camera) {
+    $template = file_get_contents($camera);
+    expect($template)
+        ->toContain('URL.revokeObjectURL(this.previewUrl)')
+        ->and($template)->toContain('URL.revokeObjectURL(img.src)');
 });
 
 // ─── service provider ──────────────────────────────────────────────

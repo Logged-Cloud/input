@@ -18,6 +18,7 @@ Components ship pre-registered; no `vendor:publish` needed unless you want to fo
 | `<x-input::password-alpine />` | Show/hide toggle + zero-dependency strength meter |
 | `<x-input::otp-alpine />` | N-box one-time code · arrow / home / end nav, paste-spread, SMS autofill, visual groups, mask mode, auto-submit on complete |
 | `<x-input::textarea-alpine />` | Auto-resizing textarea with optional character counter |
+| `<x-input::camera-alpine />` | In-page camera via `getUserMedia` + canvas compression · skips the OS camera app, ships a real `File` to the server |
 
 Phone, currency, tags, and autocomplete variants are planned · the four above are the foundation. PRs welcome.
 
@@ -49,6 +50,17 @@ Phone, currency, tags, and autocomplete variants are planned · the four above a
 
 {{-- Auto-resizing comment box with a character limit --}}
 <x-input::textarea-alpine name="notes" maxlength="500" placeholder="Add notes…" />
+
+{{-- In-page camera · uses the live stream, no OS camera app handoff,
+     compresses to ~1 MB JPEG before posting. The form submits as
+     normal multipart/form-data so server-side `image` validation works
+     untouched. --}}
+<form method="post" action="/upload" enctype="multipart/form-data">
+    @csrf
+    <x-input::camera-alpine name="photo" facing="environment"
+                            :quality="0.85" max-edge="1600" required />
+    <button type="submit">Upload</button>
+</form>
 ```
 
 ## Conventions

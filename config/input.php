@@ -64,4 +64,23 @@ return [
         'counter' => true,
     ],
 
+    'camera' => [
+        // Preferred camera · 'environment' = rear (best for documents,
+        // food, scenery), 'user' = front (best for selfies). Browsers
+        // fall back to whatever is available when the preferred one is
+        // not on the device.
+        'facing' => 'environment',
+        // Output image format · 'image/jpeg' is the most compatible,
+        // 'image/webp' compresses better on supported browsers.
+        'mime' => 'image/jpeg',
+        // 0.0 - 1.0 · 0.85 keeps text legible while shrinking JPEGs ~70%.
+        'quality' => 0.85,
+        // Cap longest edge in pixels · resizes proportionally before
+        // encoding so a 12 MP phone photo lands under ~1 MB at 1600px.
+        'max_edge' => 1600,
+        // Fallback to a normal file picker when getUserMedia is denied
+        // / unavailable / on a desktop without a webcam.
+        'allow_gallery' => true,
+    ],
+
 ];
