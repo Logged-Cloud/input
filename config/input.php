@@ -121,6 +121,37 @@ return [
         'min_chars' => 2,
     ],
 
+    'tags' => [
+        // Allow duplicate values · default off · most uses want a unique
+        // set (tag list, ingredient list). Toggle on for queues / ordered
+        // logs where repetition matters.
+        'allow_duplicates' => false,
+        // Hard cap on number of tags · null = unlimited.
+        'max' => null,
+    ],
+
+    'file_multi' => [
+        // Maximum number of files the user can attach in one go.
+        'max_files' => 8,
+        // Per-file size cap in MB · enforced client-side as a UX guard ·
+        // the server should still enforce its own ceiling.
+        'max_size_mb' => 10,
+        // MIME pattern · '*/*' = any · 'image/*' = images only.
+        'accept' => '*/*',
+    ],
+
+    'range' => [
+        // Default step granularity · 1 = integers, 0.1 = one decimal.
+        'step' => 1,
+    ],
+
+    'markdown' => [
+        // Maximum height before scroll kicks in (in pixels).
+        'max_height' => 320,
+        // Show a "N / max" counter when `maxlength` is set on the input.
+        'counter' => true,
+    ],
+
     'camera' => [
         // Preferred camera · 'environment' = rear (best for documents,
         // food, scenery), 'user' = front (best for selfies). Browsers

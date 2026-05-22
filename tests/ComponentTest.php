@@ -19,6 +19,13 @@ $geolocation  = __DIR__.'/../resources/views/components/geolocation-alpine.blade
 $signature    = __DIR__.'/../resources/views/components/signature-alpine.blade.php';
 $voice        = __DIR__.'/../resources/views/components/voice-alpine.blade.php';
 $autocomplete = __DIR__.'/../resources/views/components/autocomplete-alpine.blade.php';
+$tags         = __DIR__.'/../resources/views/components/tags-alpine.blade.php';
+$fileMulti    = __DIR__.'/../resources/views/components/file-multi-alpine.blade.php';
+$range        = __DIR__.'/../resources/views/components/range-alpine.blade.php';
+$dualRange    = __DIR__.'/../resources/views/components/dual-range-alpine.blade.php';
+$markdown     = __DIR__.'/../resources/views/components/markdown-alpine.blade.php';
+$emoji        = __DIR__.'/../resources/views/components/emoji-alpine.blade.php';
+$copy         = __DIR__.'/../resources/views/components/copy-alpine.blade.php';
 $provider     = __DIR__.'/../src/InputServiceProvider.php';
 
 // ─── mask-alpine ────────────────────────────────────────────────────
@@ -524,6 +531,206 @@ test('autocomplete-alpine emits a custom event on selection', function () use ($
     $template = file_get_contents($autocomplete);
     expect($template)
         ->toContain("'lc-input:autocomplete:selected'");
+});
+
+// ─── tags-alpine ────────────────────────────────────────────────────
+
+test('tags-alpine posts an array via name[] hidden inputs', function () use ($tags) {
+    $template = file_get_contents($tags);
+    expect($template)
+        ->toContain(':name="`{{ $name }}[]`"');
+});
+
+test('tags-alpine commits on Enter / Tab / configured separators', function () use ($tags) {
+    $template = file_get_contents($tags);
+    expect($template)
+        ->toContain('@keydown.enter.prevent="commit()"')
+        ->and($template)->toContain('@keydown.tab')
+        ->and($template)->toContain('separators.includes(e.key)');
+});
+
+test('tags-alpine deletes the last chip on empty-draft backspace', function () use ($tags) {
+    $template = file_get_contents($tags);
+    expect($template)
+        ->toContain('@keydown.backspace="onBackspace()"')
+        ->and($template)->toContain("if (this.draft === '' && this.tags.length > 0)");
+});
+
+test('tags-alpine respects allowDuplicates + max caps', function () use ($tags) {
+    $template = file_get_contents($tags);
+    expect($template)
+        ->toContain('canAdd(v)')
+        ->and($template)->toContain('if (this.atMax) return false')
+        ->and($template)->toContain('this.tags.some((t) => t.toLowerCase() === v.toLowerCase())');
+});
+
+test('tags-alpine splits a pasted "a, b, c" into separate chips', function () use ($tags) {
+    $template = file_get_contents($tags);
+    expect($template)
+        ->toContain('@paste="onPaste($event)"')
+        ->and($template)->toContain('text.split(new RegExp');
+});
+
+// ─── file-multi-alpine ──────────────────────────────────────────────
+
+test('file-multi-alpine accepts drag-drop and click-to-choose', function () use ($fileMulti) {
+    $template = file_get_contents($fileMulti);
+    expect($template)
+        ->toContain('@dragover.prevent')
+        ->and($template)->toContain('@drop.prevent="onDrop($event)"')
+        ->and($template)->toContain("@change=\"onChoose(\$event)\"");
+});
+
+test('file-multi-alpine enforces max-files and max-size client-side', function () use ($fileMulti) {
+    $template = file_get_contents($fileMulti);
+    expect($template)
+        ->toContain('this.files.length >= maxFiles')
+        ->and($template)->toContain('f.size > maxSizeMb * 1024 * 1024');
+});
+
+test('file-multi-alpine renders image previews via object URLs', function () use ($fileMulti) {
+    $template = file_get_contents($fileMulti);
+    expect($template)
+        ->toContain("f.type.startsWith('image/') ? URL.createObjectURL(f)")
+        ->and($template)->toContain('URL.revokeObjectURL(item.previewUrl)');
+});
+
+test('file-multi-alpine syncs the underlying file input via DataTransfer', function () use ($fileMulti) {
+    $template = file_get_contents($fileMulti);
+    expect($template)
+        ->toContain('new DataTransfer()')
+        ->and($template)->toContain('this.$refs.fileField.files = dt.files');
+});
+
+test('file-multi-alpine honours the accept pattern (mime/*, .ext, mime/type)', function () use ($fileMulti) {
+    $template = file_get_contents($fileMulti);
+    expect($template)
+        ->toContain('matchesAccept(file)')
+        ->and($template)->toContain("pattern.endsWith('/*')")
+        ->and($template)->toContain("pattern.startsWith('.')");
+});
+
+// ─── range-alpine ───────────────────────────────────────────────────
+
+test('range-alpine wraps the native input with a tracking value bubble', function () use ($range) {
+    $template = file_get_contents($range);
+    expect($template)
+        ->toContain('class="lc-range-bubble"')
+        ->and($template)->toContain(':style="`left:${pct}%;`"');
+});
+
+test('range-alpine computes pct from current value vs min / max', function () use ($range) {
+    $template = file_get_contents($range);
+    expect($template)
+        ->toContain('get pct()')
+        ->and($template)->toContain('((this.current - min) / (max - min)) * 100');
+});
+
+test('range-alpine optionally renders sparse tick marks', function () use ($range) {
+    $template = file_get_contents($range);
+    expect($template)
+        ->toContain('get ticks()')
+        ->and($template)->toContain('if (steps > 20) return []');
+});
+
+// ─── dual-range-alpine ──────────────────────────────────────────────
+
+test('dual-range-alpine posts paired _min / _max hidden inputs', function () use ($dualRange) {
+    $template = file_get_contents($dualRange);
+    expect($template)
+        ->toContain('name="{{ $minName }}"')
+        ->and($template)->toContain('name="{{ $maxName }}"')
+        ->and($template)->toContain('$minName ??= $name.\'_min\'')
+        ->and($template)->toContain('$maxName ??= $name.\'_max\'');
+});
+
+test('dual-range-alpine prevents the two thumbs from crossing', function () use ($dualRange) {
+    $template = file_get_contents($dualRange);
+    expect($template)
+        ->toContain('clamp()')
+        ->and($template)->toContain('this.low  = Math.min(this.low,  this.high - step)')
+        ->and($template)->toContain('this.high = Math.max(this.high, this.low  + step)');
+});
+
+// ─── markdown-alpine ────────────────────────────────────────────────
+
+test('markdown-alpine toggles between write and preview', function () use ($markdown) {
+    $template = file_get_contents($markdown);
+    expect($template)
+        ->toContain("tab === 'write'")
+        ->and($template)->toContain("tab === 'preview'")
+        ->and($template)->toContain('x-html="renderedHtml"');
+});
+
+test('markdown-alpine ships keyboard shortcuts for bold / italic / link', function () use ($markdown) {
+    $template = file_get_contents($markdown);
+    expect($template)
+        ->toContain("if (e.key === 'b')")
+        ->and($template)->toContain("if (e.key === 'i')")
+        ->and($template)->toContain("if (e.key === 'k')");
+});
+
+test('markdown-alpine has a tiny renderer covering common syntax', function () use ($markdown) {
+    $template = file_get_contents($markdown);
+    foreach ([
+        '<strong>',  // bold replacement
+        '<em>',      // italic replacement
+        '<code>',    // inline code
+        '<pre><code>', // code blocks
+        '<a href',   // links
+        '<h${hashes.length}>', // headers
+        '<ul>',      // lists
+    ] as $needle) {
+        expect($template)->toContain($needle);
+    }
+});
+
+test('markdown-alpine escapes HTML in user input to stay XSS-safe', function () use ($markdown) {
+    $template = file_get_contents($markdown);
+    expect($template)
+        ->toContain('escape = (s)')
+        ->and($template)->toContain("replace(/&/g, '&amp;')")
+        ->and($template)->toContain("replace(/</g, '&lt;')");
+});
+
+// ─── emoji-alpine ───────────────────────────────────────────────────
+
+test('emoji-alpine renders a picker popup with keyword search', function () use ($emoji) {
+    $template = file_get_contents($emoji);
+    expect($template)
+        ->toContain('class="lc-emoji-grid"')
+        ->and($template)->toContain('x-model="query"')
+        ->and($template)->toContain('e.k.some((kw) => kw.includes(q))');
+});
+
+test('emoji-alpine inserts at the current caret instead of appending', function () use ($emoji) {
+    $template = file_get_contents($emoji);
+    expect($template)
+        ->toContain('input.selectionStart')
+        ->and($template)->toContain('input.setSelectionRange(caret, caret)');
+});
+
+// ─── copy-alpine ────────────────────────────────────────────────────
+
+test('copy-alpine writes to the clipboard with an execCommand fallback', function () use ($copy) {
+    $template = file_get_contents($copy);
+    expect($template)
+        ->toContain('navigator.clipboard.writeText')
+        ->and($template)->toContain("document.execCommand('copy')");
+});
+
+test('copy-alpine surfaces a "copied" indicator that auto-clears', function () use ($copy) {
+    $template = file_get_contents($copy);
+    expect($template)
+        ->toContain('this.copied = true')
+        ->and($template)->toContain('setTimeout(() => this.copied = false, 1200)');
+});
+
+test('copy-alpine masks the value behind dots when mask=true', function () use ($copy) {
+    $template = file_get_contents($copy);
+    expect($template)
+        ->toContain("'•'.repeat(Math.min(value.length, 24))")
+        ->and($template)->toContain('revealed = ! revealed');
 });
 
 // ─── service provider ──────────────────────────────────────────────

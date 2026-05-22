@@ -26,6 +26,13 @@ Components ship pre-registered; no `vendor:publish` needed unless you want to fo
 | `<x-input::signature-alpine />` | Canvas signature pad · pointer events, retina-scaled, ships a PNG file |
 | `<x-input::voice-alpine />` | Voice memo via `MediaRecorder` · ships an audio file, inline player, max-duration cap |
 | `<x-input::autocomplete-alpine />` | ARIA combobox with remote or inline source · debounced, abort-stale, keyboard-nav |
+| `<x-input::tags-alpine />` | Chip-style multi-value · Enter / Tab / separator commit, backspace-deletes-last-chip, paste-splits |
+| `<x-input::file-multi-alpine />` | Drag-drop multi-file picker · per-file size guard, image previews, accept-pattern filter |
+| `<x-input::range-alpine />` | Single slider with a tracking value bubble + optional ticks |
+| `<x-input::dual-range-alpine />` | Min/max two-thumb slider · paired `_min` + `_max` hidden inputs, non-crossing thumbs |
+| `<x-input::markdown-alpine />` | Markdown with a Write / Preview tab toggle + Cmd-B/I/K shortcuts · zero-dep renderer |
+| `<x-input::emoji-alpine />` | Text input with a popup picker · keyword search · inserts at caret |
+| `<x-input::copy-alpine />` | Display-only value with copy-to-clipboard + optional mask |
 
 Phone, currency, tags, and autocomplete variants are planned · the four above are the foundation. PRs welcome.
 
