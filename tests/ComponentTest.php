@@ -7,12 +7,19 @@
 | consumer apps where a real browser drives the markup.
 */
 
-$mask     = __DIR__.'/../resources/views/components/mask-alpine.blade.php';
-$password = __DIR__.'/../resources/views/components/password-alpine.blade.php';
-$otp      = __DIR__.'/../resources/views/components/otp-alpine.blade.php';
-$textarea = __DIR__.'/../resources/views/components/textarea-alpine.blade.php';
-$camera   = __DIR__.'/../resources/views/components/camera-alpine.blade.php';
-$provider = __DIR__.'/../src/InputServiceProvider.php';
+$mask         = __DIR__.'/../resources/views/components/mask-alpine.blade.php';
+$password     = __DIR__.'/../resources/views/components/password-alpine.blade.php';
+$otp          = __DIR__.'/../resources/views/components/otp-alpine.blade.php';
+$textarea     = __DIR__.'/../resources/views/components/textarea-alpine.blade.php';
+$camera       = __DIR__.'/../resources/views/components/camera-alpine.blade.php';
+$toggle       = __DIR__.'/../resources/views/components/toggle-alpine.blade.php';
+$currency     = __DIR__.'/../resources/views/components/currency-alpine.blade.php';
+$mobile       = __DIR__.'/../resources/views/components/mobile-alpine.blade.php';
+$geolocation  = __DIR__.'/../resources/views/components/geolocation-alpine.blade.php';
+$signature    = __DIR__.'/../resources/views/components/signature-alpine.blade.php';
+$voice        = __DIR__.'/../resources/views/components/voice-alpine.blade.php';
+$autocomplete = __DIR__.'/../resources/views/components/autocomplete-alpine.blade.php';
+$provider     = __DIR__.'/../src/InputServiceProvider.php';
 
 // ─── mask-alpine ────────────────────────────────────────────────────
 
@@ -270,6 +277,253 @@ test('camera-alpine cleans up object URLs to avoid leaks', function () use ($cam
     expect($template)
         ->toContain('URL.revokeObjectURL(this.previewUrl)')
         ->and($template)->toContain('URL.revokeObjectURL(img.src)');
+});
+
+// ─── toggle-alpine ──────────────────────────────────────────────────
+
+test('toggle-alpine renders a switch role with aria-checked', function () use ($toggle) {
+    $template = file_get_contents($toggle);
+    expect($template)
+        ->toContain('role="switch"')
+        ->and($template)->toContain(":aria-checked=\"on ? 'true' : 'false'\"");
+});
+
+test('toggle-alpine posts configurable on / off values', function () use ($toggle) {
+    $template = file_get_contents($toggle);
+    expect($template)
+        ->toContain("'onValue' => null")
+        ->and($template)->toContain("'offValue' => null")
+        ->and($template)->toContain('get postedValue() { return this.on ? onValue : offValue; }');
+});
+
+test('toggle-alpine responds to space and enter as well as click', function () use ($toggle) {
+    $template = file_get_contents($toggle);
+    expect($template)
+        ->toContain('@keydown.space.prevent')
+        ->and($template)->toContain('@keydown.enter.prevent');
+});
+
+// ─── currency-alpine ────────────────────────────────────────────────
+
+test('currency-alpine separates display from raw numeric posted value', function () use ($currency) {
+    $template = file_get_contents($currency);
+    expect($template)
+        ->toContain('name="{{ $name }}"')
+        ->and($template)->toContain('x-model="raw"');
+});
+
+test('currency-alpine derives separator + symbol from Intl', function () use ($currency) {
+    $template = file_get_contents($currency);
+    expect($template)
+        ->toContain('new Intl.NumberFormat(locale')
+        ->and($template)->toContain("p.type === 'decimal'")
+        ->and($template)->toContain("p.type === 'group'")
+        ->and($template)->toContain("p.type === 'currency'");
+});
+
+test('currency-alpine reformats on blur · not while typing', function () use ($currency) {
+    $template = file_get_contents($currency);
+    expect($template)
+        ->toContain('onBlur()')
+        ->and($template)->toContain("@blur=\"onBlur()\"");
+});
+
+test('currency-alpine clamps min / max if supplied', function () use ($currency) {
+    $template = file_get_contents($currency);
+    expect($template)
+        ->toContain('if (min !== null && num < min) num = min;')
+        ->and($template)->toContain('if (max !== null && num > max) num = max;');
+});
+
+// ─── mobile-alpine ──────────────────────────────────────────────────
+
+test('mobile-alpine posts E.164 not the visible formatted string', function () use ($mobile) {
+    $template = file_get_contents($mobile);
+    expect($template)
+        ->toContain('name="{{ $name }}"')
+        ->and($template)->toContain('x-model="e164"')
+        ->and($template)->toContain('this.e164 = raw ? this.current.dial + raw : \'\'');
+});
+
+test('mobile-alpine ships a curated country picker with flags + dial codes', function () use ($mobile) {
+    $template = file_get_contents($mobile);
+    foreach (["iso: 'GB'", "iso: 'US'", "dial: '+44'", "dial: '+1'", 'flag:'] as $needle) {
+        expect($template)->toContain($needle);
+    }
+});
+
+test('mobile-alpine reformats existing digits when the country changes', function () use ($mobile) {
+    $template = file_get_contents($mobile);
+    expect($template)
+        ->toContain('onCountryChange()')
+        ->and($template)->toContain('this.display = this.formatMasked(this.rawDigits())');
+});
+
+test('mobile-alpine detects the country from a pre-filled E.164 value', function () use ($mobile) {
+    $template = file_get_contents($mobile);
+    expect($template)
+        ->toContain('initial.startsWith(c.dial)');
+});
+
+// ─── geolocation-alpine ─────────────────────────────────────────────
+
+test('geolocation-alpine posts lat + lng as separate hidden inputs', function () use ($geolocation) {
+    $template = file_get_contents($geolocation);
+    expect($template)
+        ->toContain('name="{{ $latName }}"')
+        ->and($template)->toContain('name="{{ $lngName }}"')
+        ->and($template)->toContain('$latName ??= $name.\'_lat\'')
+        ->and($template)->toContain('$lngName ??= $name.\'_lng\'');
+});
+
+test('geolocation-alpine uses the navigator geolocation API', function () use ($geolocation) {
+    $template = file_get_contents($geolocation);
+    expect($template)
+        ->toContain('navigator.geolocation.getCurrentPosition')
+        ->and($template)->toContain('enableHighAccuracy:');
+});
+
+test('geolocation-alpine surfaces permission + availability errors', function () use ($geolocation) {
+    $template = file_get_contents($geolocation);
+    expect($template)
+        ->toContain('PERMISSION_DENIED')
+        ->and($template)->toContain('POSITION_UNAVAILABLE')
+        ->and($template)->toContain('Location permission denied');
+});
+
+test('geolocation-alpine emits a custom event consumers can hook', function () use ($geolocation) {
+    $template = file_get_contents($geolocation);
+    expect($template)
+        ->toContain("'lc-input:geolocation:resolved'");
+});
+
+// ─── signature-alpine ───────────────────────────────────────────────
+
+test('signature-alpine wires the pointer event family · mouse + touch + stylus', function () use ($signature) {
+    $template = file_get_contents($signature);
+    foreach ([
+        '@pointerdown.prevent',
+        '@pointermove.prevent',
+        '@pointerup',
+        '@pointerleave',
+        '@pointercancel',
+    ] as $needle) {
+        expect($template)->toContain($needle);
+    }
+});
+
+test('signature-alpine scales the canvas bitmap for retina displays', function () use ($signature) {
+    $template = file_get_contents($signature);
+    expect($template)
+        ->toContain('window.devicePixelRatio')
+        ->and($template)->toContain('canvas.width  = rect.width * this.dpr');
+});
+
+test('signature-alpine commits a PNG via DataTransfer on form submit', function () use ($signature) {
+    $template = file_get_contents($signature);
+    expect($template)
+        ->toContain("canvas.toBlob((blob)")
+        ->and($template)->toContain('new DataTransfer()')
+        ->and($template)->toContain("this.\$root.closest('form')")
+        ->and($template)->toContain("addEventListener('submit'");
+});
+
+test('signature-alpine offers a clear button', function () use ($signature) {
+    $template = file_get_contents($signature);
+    expect($template)
+        ->toContain('@click="clear()"')
+        ->and($template)->toContain('clearRect(0, 0, canvas.width, canvas.height)');
+});
+
+// ─── voice-alpine ───────────────────────────────────────────────────
+
+test('voice-alpine uses MediaRecorder + getUserMedia', function () use ($voice) {
+    $template = file_get_contents($voice);
+    expect($template)
+        ->toContain('navigator.mediaDevices.getUserMedia')
+        ->and($template)->toContain('new MediaRecorder(this.stream')
+        ->and($template)->toContain('window.MediaRecorder.isTypeSupported(mime)');
+});
+
+test('voice-alpine stops automatically at maxSeconds', function () use ($voice) {
+    $template = file_get_contents($voice);
+    expect($template)
+        ->toContain('if (this.elapsedSec >= maxSeconds) this.stop()');
+});
+
+test('voice-alpine commits the recording via DataTransfer on stop', function () use ($voice) {
+    $template = file_get_contents($voice);
+    expect($template)
+        ->toContain('new Blob(this.chunks')
+        ->and($template)->toContain('new DataTransfer()')
+        ->and($template)->toContain("new Event('change', { bubbles: true })");
+});
+
+test('voice-alpine handles permission denied gracefully', function () use ($voice) {
+    $template = file_get_contents($voice);
+    expect($template)
+        ->toContain("e?.name === 'NotAllowedError'")
+        ->and($template)->toContain('Microphone permission denied');
+});
+
+// ─── autocomplete-alpine ────────────────────────────────────────────
+
+test('autocomplete-alpine wires the full ARIA combobox surface', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    foreach ([
+        'role="combobox"',
+        'role="listbox"',
+        'role="option"',
+        'aria-autocomplete="list"',
+        ':aria-expanded',
+        ':aria-controls',
+        ':aria-activedescendant',
+        ':aria-selected',
+    ] as $needle) {
+        expect($template)->toContain($needle);
+    }
+});
+
+test('autocomplete-alpine supports both URL and inline-array sources', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    expect($template)
+        ->toContain("source.kind === 'local'")
+        ->and($template)->toContain('filterLocal(source.items, this.query)')
+        ->and($template)->toContain('await fetch(url');
+});
+
+test('autocomplete-alpine aborts stale requests to prevent race conditions', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    expect($template)
+        ->toContain('new AbortController()')
+        ->and($template)->toContain('this.aborter.abort()')
+        ->and($template)->toContain("e.name === 'AbortError'");
+});
+
+test('autocomplete-alpine debounces keystrokes and gates on min chars', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    expect($template)
+        ->toContain('@input.debounce.{{ $debounceMs }}ms="onQuery()"')
+        ->and($template)->toContain('if (this.query.length < minChars)');
+});
+
+test('autocomplete-alpine wires the keyboard nav · arrows + enter + escape', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    foreach ([
+        '@keydown.arrow-down.prevent',
+        '@keydown.arrow-up.prevent',
+        '@keydown.enter.prevent',
+        '@keydown.escape.window',
+        '@keydown.tab',
+    ] as $needle) {
+        expect($template)->toContain($needle);
+    }
+});
+
+test('autocomplete-alpine emits a custom event on selection', function () use ($autocomplete) {
+    $template = file_get_contents($autocomplete);
+    expect($template)
+        ->toContain("'lc-input:autocomplete:selected'");
 });
 
 // ─── service provider ──────────────────────────────────────────────

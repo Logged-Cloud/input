@@ -19,6 +19,13 @@ Components ship pre-registered; no `vendor:publish` needed unless you want to fo
 | `<x-input::otp-alpine />` | N-box one-time code · arrow / home / end nav, paste-spread, SMS autofill, visual groups, mask mode, auto-submit on complete |
 | `<x-input::textarea-alpine />` | Auto-resizing textarea with optional character counter |
 | `<x-input::camera-alpine />` | In-page camera via `getUserMedia` + canvas compression · skips the OS camera app, ships a real `File` to the server |
+| `<x-input::toggle-alpine />` | Flip switch · role=switch, keyboard, configurable on/off values |
+| `<x-input::currency-alpine />` | Locale-aware money input · symbol prefix, raw decimal posted, min/max clamp |
+| `<x-input::mobile-alpine />` | International phone with country picker · stores canonical E.164 |
+| `<x-input::geolocation-alpine />` | "Use my location" button · posts lat + lng as paired hidden inputs |
+| `<x-input::signature-alpine />` | Canvas signature pad · pointer events, retina-scaled, ships a PNG file |
+| `<x-input::voice-alpine />` | Voice memo via `MediaRecorder` · ships an audio file, inline player, max-duration cap |
+| `<x-input::autocomplete-alpine />` | ARIA combobox with remote or inline source · debounced, abort-stale, keyboard-nav |
 
 Phone, currency, tags, and autocomplete variants are planned · the four above are the foundation. PRs welcome.
 

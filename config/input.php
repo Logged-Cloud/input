@@ -64,6 +64,63 @@ return [
         'counter' => true,
     ],
 
+    'toggle' => [
+        // String values posted to the server when on / off. Default to the
+        // standard '1'/'0' so server-side `accepted` / `boolean` validation
+        // works without further plumbing.
+        'on_value' => '1',
+        'off_value' => '0',
+    ],
+
+    'currency' => [
+        // BCP 47 locale used for formatting (separator + decimal style).
+        'locale' => 'en-GB',
+        // ISO 4217 code used to look up the symbol via Intl.NumberFormat.
+        'currency' => 'GBP',
+        // Decimal places · usually 2; some currencies (JPY, KRW) want 0.
+        'decimals' => 2,
+    ],
+
+    'mobile' => [
+        // ISO 3166-1 alpha-2 country code · drives the country picker's
+        // initial selection. The component normalises to E.164 on post.
+        'default_country' => 'GB',
+    ],
+
+    'geolocation' => [
+        // Hint precision · 'high' enables enableHighAccuracy on the
+        // geolocation API (longer wait, better fix). 'low' = faster.
+        'precision' => 'high',
+        // Timeout in milliseconds for the navigator.geolocation call.
+        'timeout_ms' => 12000,
+    ],
+
+    'signature' => [
+        // Stroke colour · CSS colour string · the canvas defaults to the
+        // host app's --accent if not overridden.
+        'stroke' => 'currentColor',
+        // Stroke width in canvas px (multiplied by devicePixelRatio for
+        // crisp lines on retina displays).
+        'stroke_width' => 2.5,
+    ],
+
+    'voice' => [
+        // Preferred MediaRecorder MIME · browser falls back if unsupported.
+        'mime' => 'audio/webm;codecs=opus',
+        // Hard cap on a single recording, in seconds. The component stops
+        // and commits the blob when this is reached.
+        'max_seconds' => 120,
+    ],
+
+    'autocomplete' => [
+        // Debounce in milliseconds between keystrokes and the request fired
+        // at the suggestion endpoint.
+        'debounce_ms' => 200,
+        // Minimum query length before a request is fired. Avoids 1-char
+        // queries hammering the remote endpoint.
+        'min_chars' => 2,
+    ],
+
     'camera' => [
         // Preferred camera · 'environment' = rear (best for documents,
         // food, scenery), 'user' = front (best for selfies). Browsers
